@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Programs\ProgramsRequest;
+use App\Jobs\GPTSeeder\UsersFill;
 use App\Repositories\UserRepository;
 use App\Models\User;
 use App\Http\Requests\Users\StoreUserRequest;
@@ -39,9 +41,9 @@ class UserController extends Controller
      * @param StoreUserRequest $request
      * @return User
      */
-    public function store(StoreUserRequest $request): User
+    public function store(StoreUserRequest $request, ProgramsRequest $program): User
     {
-        return $this->userRepository->create($request->except(['programs']), $request->get('programs'));
+        return $this->userRepository->create($request->all(), $program->get('programs'));
     }
 
     /**
@@ -59,11 +61,12 @@ class UserController extends Controller
      * Update model
      *
      * @param StoreUserRequest $request
+     * @param ProgramsRequest $program
      * @return User
      */
-    public function update(UpdateUserRequest $request, string $id): User
+    public function update(UpdateUserRequest $request, ProgramsRequest $program, string $id): User
     {
-        return $this->userRepository->update($id, $request->except(['programs']), $request->get('programs'));
+        return $this->userRepository->update($id, $request->all(), $program->get('programs'));
     }
 
     /**
@@ -76,6 +79,21 @@ class UserController extends Controller
     {
         return response()->json([
             'success' => (bool) $this->userRepository->delete($id),
+        ]);
+    }
+
+    /**
+     * Fill using gpt
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function gpt()
+    {
+        UsersFill::dispatch();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fill with GPT process will be run quickly'
         ]);
     }
 }

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GPTSeeder\ProgramsFill;
 use App\Repositories\ProgramRepository;
 use App\Models\Program;
 use App\Http\Requests\Programs\StoreProgramRequest;
 use App\Http\Requests\Programs\UpdateProgramRequest;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
 
 class ProgramController extends Controller
 {
@@ -39,9 +41,9 @@ class ProgramController extends Controller
      * @param StoreProgramRequest $request
      * @return Program
      */
-    public function store(StoreProgramRequest $request): Program
+    public function store(StoreProgramRequest $request, string $userId): Program
     {
-        return $this->programRepository->create($request->get('user_id'), $request->except(['user_id']));
+        return $this->programRepository->create($userId, $request->all());
     }
 
     /**
@@ -70,12 +72,27 @@ class ProgramController extends Controller
      * Delete model
      *
      * @param string $id
-     * @return void
+     * @return JsonResponse
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         return response()->json([
             'success' => (bool) $this->programRepository->delete($id),
+        ]);
+    }
+
+    /**
+     * Fill using gpt
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function gpt()
+    {
+        ProgramsFill::dispatch();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fill with GPT process will be run quickly'
         ]);
     }
 }

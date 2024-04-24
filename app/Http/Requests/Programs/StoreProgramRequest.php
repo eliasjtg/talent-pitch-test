@@ -31,11 +31,6 @@ class StoreProgramRequest extends FormRequest
                 'required',
                 'date',
             ],
-            'user_id' => [
-                'required',
-                'integer',
-                'exists:users,id'
-            ],
         ];
     }
 }

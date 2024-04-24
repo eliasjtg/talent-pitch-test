@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Programs\ProgramsRequest;
+use App\Jobs\GPTSeeder\CompaniesFill;
 use App\Repositories\CompanyRepository;
 use App\Models\Company;
 use App\Http\Requests\Companies\StoreCompanyRequest;
 use App\Http\Requests\Companies\UpdateCompanyRequest;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
 
 class CompanyController extends Controller
 {
@@ -37,11 +40,13 @@ class CompanyController extends Controller
      * Create model
      *
      * @param StoreCompanyRequest $request
+     * @param ProgramsRequest $program
+     * @param string $userId
      * @return Company
      */
-    public function store(StoreCompanyRequest $request): Company
+    public function store(StoreCompanyRequest $request, ProgramsRequest $program, string $userId): Company
     {
-        return $this->companyRepository->create($request->get('user_id'), $request->except(['user_id', 'programs']), $request->get('programs'));
+        return $this->companyRepository->create($userId, $request->all(), $program->get('programs'));
     }
 
     /**
@@ -59,23 +64,40 @@ class CompanyController extends Controller
      * Update model
      *
      * @param StoreCompanyRequest $request
+     * @param ProgramsRequest $program
+     * @param string $id
      * @return Company
      */
-    public function update(UpdateCompanyRequest $request, string $id): Company
+    public function update(UpdateCompanyRequest $request, ProgramsRequest $program, string $id): Company
     {
-        return $this->companyRepository->update($id, $request->except(['user_id', 'programs']), $request->get('user_id'), $request->get('programs'));
+        return $this->companyRepository->update($id, $request->except(['user_id']), $request->get('user_id'), $program->get('programs'));
     }
 
     /**
      * Delete model
      *
      * @param string $id
-     * @return void
+     * @return JsonResponse
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         return response()->json([
             'success' => (bool) $this->companyRepository->delete($id),
+        ]);
+    }
+
+    /**
+     * Fill using gpt
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function gpt()
+    {
+        CompaniesFill::dispatch();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fill with GPT process will be run quickly'
         ]);
     }
 }

@@ -45,7 +45,7 @@ class ProgramRepository {
      * @param array $attributes
      * @return Program
      */
-    public function create(int $user, array $attributes): Program
+    public function create(User|int $user, array $attributes): Program
     {
 
         try {
@@ -54,10 +54,9 @@ class ProgramRepository {
                  * @var Program $program
                  */
                 $program = new Program($attributes);
-                $user = $user instanceof User ? $user : $this->user->findOrFail($user);
                 $program->user()->associate($user);
                 $program->save();
-                return $program->refresh();
+                return $program->load('user');
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));
@@ -98,7 +97,7 @@ class ProgramRepository {
                     $program->user()->associate($user);
                 }
                 $program->update($attributes);
-                return $program->refresh();
+                return $program->refresh()->load('user');
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));

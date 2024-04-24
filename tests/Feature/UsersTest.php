@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\GPTSeeder\UsersFill;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Bus;
+use OpenAI\Laravel\Facades\OpenAI;
+use OpenAI\Responses\Chat\CreateResponse;
 use Tests\TestCase;
 
 class UsersTest extends TestCase
@@ -284,5 +288,31 @@ class UsersTest extends TestCase
         $response = $this->deleteJson("/api/users/{$this->faker->randomNumber()}");
 
         $response->assertStatus(404);
+    }
+
+    /**
+     * Test fill with gpt
+     */
+    public function test_fill_with_gpt(): void
+    {
+        Bus::fake();
+
+        OpenAI::fake([
+            CreateResponse::fake([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => "{ \"users\": [ { \"name\": \"John Doe\", \"email\": \"johndoe@example.com\", \"image_path\": \"https://example.com/images/johndoe.jpg\" }, { \"name\": \"Jane Smith\", \"email\": \"janesmith@example.com\", \"image_path\": \"https://example.com/images/janesmith.jpg\" }, { \"name\": \"Mike Johnson\", \"email\": \"mikejohnson@example.com\", \"image_path\": \"https://example.com/images/mikejohnson.jpg\" }, { \"name\": \"Emily Brown\", \"email\": \"emilybrown@example.com\", \"image_path\": \"https://example.com/images/emilybrown.jpg\" }, { \"name\": \"David Wilson\", \"email\": \"davidwilson@example.com\", \"image_path\": \"https://example.com/images/davidwilson.jpg\" }, { \"name\": \"Sarah Miller\", \"email\": \"sarahmiller@example.com\", \"image_path\": \"https://example.com/images/sarahmiller.jpg\" }, { \"name\": \"Chris Martinez\", \"email\": \"chrismartinez@example.com\", \"image_path\": \"https://example.com/images/chrismartinez.jpg\" }, { \"name\": \"Amy Lee\", \"email\": \"amylee@example.com\", \"image_path\": \"https://example.com/images/amylee.jpg\" }, { \"name\": \"Kevin Nguyen\", \"email\": \"kevinnguyen@example.com\", \"image_path\": \"https://example.com/images/kevinnguyen.jpg\" }, { \"name\": \"Jessica Taylor\", \"email\": \"jessicataylor@example.com\", \"image_path\": \"https://example.com/images/jessicataylor.jpg\" } ] }",
+                        ]
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->postJson('/api/users/gpt');
+
+        $response->assertStatus(200);
+        
+        Bus::assertDispatched(UsersFill::class);
     }
 }

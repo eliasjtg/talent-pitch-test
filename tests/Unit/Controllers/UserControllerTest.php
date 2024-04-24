@@ -3,8 +3,10 @@
 namespace Tests\Unit\Controllers;
 
 use App\Http\Controllers\UserController;
+use App\Http\Requests\Programs\ProgramsRequest;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use App\Jobs\GPTSeeder\UsersFill;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,7 +14,10 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Route;
+use OpenAI\Laravel\Facades\OpenAI;
+use OpenAI\Responses\Chat\CreateResponse;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
@@ -75,6 +80,7 @@ class UserControllerTest extends TestCase
                 'email' => $this->faker->email,
                 'image_path' => $this->faker->imageUrl(),
             ]),
+            ProgramsRequest::create('/api/users', 'POST', []),
         );
 
         $this->assertInstanceOf(User::class, $user);
@@ -97,6 +103,7 @@ class UserControllerTest extends TestCase
                 'email' => $this->faker->email,
                 'image_path' => $this->faker->imageUrl(),
             ]),
+            ProgramsRequest::create('/api/users', 'POST', []),
         );
     }
 
@@ -117,6 +124,7 @@ class UserControllerTest extends TestCase
                 'name' => $this->faker->name,
                 'image_path' => $this->faker->imageUrl(),
             ]),
+            ProgramsRequest::create('/api/users', 'POST', []),
         );
     }
 
@@ -135,6 +143,7 @@ class UserControllerTest extends TestCase
                 'name' => $this->faker->name,
                 'email' => $this->faker->email,
             ]),
+            ProgramsRequest::create('/api/users', 'POST', []),
         );
 
         $this->assertInstanceOf(User::class, $user);
@@ -206,6 +215,7 @@ class UserControllerTest extends TestCase
 
         $updatedUser = $controller->update(
             $request,
+            ProgramsRequest::create("/api/users/{$user->getKey()}", 'PATCH', []),
             $user->getKey(),
         );
 
@@ -247,6 +257,7 @@ class UserControllerTest extends TestCase
 
         $updatedUser = $controller->update(
             $request,
+            ProgramsRequest::create("/api/users/{$user->getKey()}", 'PATCH', []),
             $user->getKey(),
         );
 
@@ -293,6 +304,7 @@ class UserControllerTest extends TestCase
 
         $updatedUser = $controller->update(
             $request,
+            ProgramsRequest::create("/api/users/{$user->getKey()}", 'PATCH', []),
             $user->getKey(),
         );
 
@@ -339,6 +351,7 @@ class UserControllerTest extends TestCase
 
         $updatedUser = $controller->update(
             $request,
+            ProgramsRequest::create("/api/users/{$user->getKey()}", 'PATCH', []),
             $user->getKey(),
         );
 
@@ -385,6 +398,7 @@ class UserControllerTest extends TestCase
 
         $controller->update(
             $request,
+            ProgramsRequest::create("/api/users/{$fakeId}", 'PATCH', []),
             $fakeId,
         );
     }
@@ -426,5 +440,38 @@ class UserControllerTest extends TestCase
         $controller = app(UserController::class);
 
         $controller->destroy($this->faker->randomNumber());
+    }
+
+    /**
+     * Test fill with gpt
+     */
+    public function test_fill_with_gpt(): void
+    {
+        Bus::fake();
+
+        OpenAI::fake([
+            CreateResponse::fake([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => "{ \"users\": [ { \"name\": \"John Doe\", \"email\": \"johndoe@example.com\", \"image_path\": \"https://example.com/images/johndoe.jpg\" }, { \"name\": \"Jane Smith\", \"email\": \"janesmith@example.com\", \"image_path\": \"https://example.com/images/janesmith.jpg\" }, { \"name\": \"Mike Johnson\", \"email\": \"mikejohnson@example.com\", \"image_path\": \"https://example.com/images/mikejohnson.jpg\" }, { \"name\": \"Emily Brown\", \"email\": \"emilybrown@example.com\", \"image_path\": \"https://example.com/images/emilybrown.jpg\" }, { \"name\": \"David Wilson\", \"email\": \"davidwilson@example.com\", \"image_path\": \"https://example.com/images/davidwilson.jpg\" }, { \"name\": \"Sarah Miller\", \"email\": \"sarahmiller@example.com\", \"image_path\": \"https://example.com/images/sarahmiller.jpg\" }, { \"name\": \"Chris Martinez\", \"email\": \"chrismartinez@example.com\", \"image_path\": \"https://example.com/images/chrismartinez.jpg\" }, { \"name\": \"Amy Lee\", \"email\": \"amylee@example.com\", \"image_path\": \"https://example.com/images/amylee.jpg\" }, { \"name\": \"Kevin Nguyen\", \"email\": \"kevinnguyen@example.com\", \"image_path\": \"https://example.com/images/kevinnguyen.jpg\" }, { \"name\": \"Jessica Taylor\", \"email\": \"jessicataylor@example.com\", \"image_path\": \"https://example.com/images/jessicataylor.jpg\" } ] }",
+                        ]
+                    ],
+                ],
+            ]),
+        ]);
+        
+        /**
+         * @var UserController $controller
+         */
+        $controller = app(UserController::class);
+
+        $response = $controller->gpt();
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $this->assertTrue($response->getData(true)['success']);
+        
+        Bus::assertDispatched(UsersFill::class);
     }
 }

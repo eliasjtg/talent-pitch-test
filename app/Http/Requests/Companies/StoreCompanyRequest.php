@@ -33,18 +33,6 @@ class StoreCompanyRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'user_id' => [
-                'required',
-                'integer',
-                'exists:users,id'
-            ],
-            'programs' => [
-                'array',
-            ],
-            'programs.*' => [
-                'integer',
-                'exists:programs,id'
-            ],
         ];
     }
 }

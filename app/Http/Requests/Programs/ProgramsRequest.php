@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Challenges;
+namespace App\Http\Requests\Programs;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreChallengeRequest extends FormRequest
+class ProgramsRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -14,18 +14,12 @@ class StoreChallengeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => [
-                'required',
-                'string',
-                'max:255',
+            'programs' => [
+                'array',
             ],
-            'description' => [
-                'required',
-                'string',
-            ],
-            'difficulty' => [
-                'required',
+            'programs.*' => [
                 'integer',
+                'exists:programs,id'
             ],
         ];
     }

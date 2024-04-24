@@ -20,13 +20,11 @@ class GPTChallengeSeeder extends Seeder
         $query = OpenAI::chat()->create([
             'model' => 'gpt-3.5-turbo',
             'messages' => [
-                ['role' => 'user', 'content' => 'Generate a json file that has 10 fake challenges. Create some fake attributes about the challenge like title, description and difficulty (from 1 to 10)'],
+                ['role' => 'user', 'content' => 'Generate a json file challenges that has 10 fake challenges. Create some fake attributes about the challenge like title, description and difficulty (from 1 to 10)'],
             ],
         ]);
         
         $result = json_decode($query->choices[0]->message->content, true);
-
-        \Log::info($query->choices[0]->message->content);
 
         $challenges = $result['challenges'];
 

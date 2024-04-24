@@ -30,13 +30,6 @@ class StoreUserRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'programs' => [
-                'array',
-            ],
-            'programs.*' => [
-                'integer',
-                'exists:programs,id'
-            ],
         ];
     }
 }

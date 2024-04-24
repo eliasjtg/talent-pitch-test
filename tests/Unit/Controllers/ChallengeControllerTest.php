@@ -5,6 +5,8 @@ namespace Tests\Unit\Controllers;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Requests\Challenges\StoreChallengeRequest;
 use App\Http\Requests\Challenges\UpdateChallengeRequest;
+use App\Http\Requests\Programs\ProgramsRequest;
+use App\Jobs\GPTSeeder\ChallengesFill;
 use App\Models\Challenge;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -13,7 +15,10 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Route;
+use OpenAI\Laravel\Facades\OpenAI;
+use OpenAI\Responses\Chat\CreateResponse;
 use Tests\TestCase;
 
 class ChallengeControllerTest extends TestCase
@@ -76,11 +81,12 @@ class ChallengeControllerTest extends TestCase
 
         $challenge = $controller->store(
             StoreChallengeRequest::create('/api/challenges', 'POST', [
-                'user_id' => $user->getKey(),
                 'title' => fake()->text(20),
                 'description' => fake()->realText(),
                 'difficulty' => fake()->numberBetween(1, 10),
             ]),
+            ProgramsRequest::create('/api/challenges', 'POST', []),
+            $user->getKey(),
         );
 
         $this->assertInstanceOf(Challenge::class, $challenge);
@@ -104,10 +110,11 @@ class ChallengeControllerTest extends TestCase
 
         $controller->store(
             StoreChallengeRequest::create('/api/challenges', 'POST', [
-                'user_id' => $user->getKey(),
                 'description' => fake()->realText(),
                 'difficulty' => fake()->numberBetween(1, 10),
             ]),
+            ProgramsRequest::create('/api/challenges', 'POST', []),
+            $user->getKey()
         );
     }
 
@@ -129,10 +136,11 @@ class ChallengeControllerTest extends TestCase
 
         $controller->store(
             StoreChallengeRequest::create('/api/challenges', 'POST', [
-                'user_id' => $user->getKey(),
                 'title' => fake()->text(20),
                 'difficulty' => fake()->numberBetween(1, 10),
             ]),
+            ProgramsRequest::create('/api/challenges', 'POST', []),
+            $user->getKey()
         );
     }
 
@@ -154,10 +162,11 @@ class ChallengeControllerTest extends TestCase
 
         $controller->store(
             StoreChallengeRequest::create('/api/challenges', 'POST', [
-                'user_id' => $user->getKey(),
                 'title' => fake()->text(20),
                 'description' => fake()->realText(),
             ]),
+            ProgramsRequest::create('/api/challenges', 'POST', []),
+            $user->getKey()
         );
     }
 
@@ -227,6 +236,7 @@ class ChallengeControllerTest extends TestCase
 
         $updatedChallenge = $controller->update(
             $request,
+            ProgramsRequest::create("/api/challenges/{$challenge->getKey()}", 'PATCH', []),
             $challenge->getKey(),
         );
 
@@ -268,6 +278,7 @@ class ChallengeControllerTest extends TestCase
 
         $updatedChallenge = $controller->update(
             $request,
+            ProgramsRequest::create("/api/challenges/{$challenge->getKey()}", 'PATCH', []),
             $challenge->getKey(),
         );
 
@@ -314,6 +325,7 @@ class ChallengeControllerTest extends TestCase
 
         $updatedChallenge = $controller->update(
             $request,
+            ProgramsRequest::create("/api/challenges/{$challenge->getKey()}", 'PATCH', []),
             $challenge->getKey(),
         );
 
@@ -348,7 +360,6 @@ class ChallengeControllerTest extends TestCase
         $newAttributes = [
             'title' => fake()->text(20),
             'description' => fake()->realText(),
-            'difficulty' => fake()->numberBetween(1, 10),
         ];
 
         $request = UpdateChallengeRequest::create("/api/challenges/{$challenge->getKey()}", 'PATCH', $newAttributes);
@@ -361,6 +372,7 @@ class ChallengeControllerTest extends TestCase
 
         $updatedChallenge = $controller->update(
             $request,
+            ProgramsRequest::create("/api/challenges/{$challenge->getKey()}", 'PATCH', []),
             $challenge->getKey(),
         );
 
@@ -408,6 +420,7 @@ class ChallengeControllerTest extends TestCase
 
         $controller->update(
             $request,
+            ProgramsRequest::create("/api/challenges/{$fakeId}", 'PATCH', []),
             $fakeId,
         );
     }
@@ -449,5 +462,38 @@ class ChallengeControllerTest extends TestCase
         $controller = app(ChallengeController::class);
 
         $controller->destroy($this->faker->randomNumber());
+    }
+
+    /**
+     * Test fill with gpt
+     */
+    public function test_fill_with_gpt(): void
+    {
+        Bus::fake();
+        
+        OpenAI::fake([
+            CreateResponse::fake([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => "{ \"challenges\": [ { \"title\": \"Mountain Climbing Adventure\", \"description\": \"Conquer the tallest peak in the region\", \"difficulty\": 9 }, { \"title\": \"Survival Escape Room\", \"description\": \"Test your skills in a series of challenging puzzles\", \"difficulty\": 7 }, { \"title\": \"Cross-Country Cycling Challenge\", \"description\": \"Navigate rugged terrain on a long-distance bike ride\", \"difficulty\": 6 }, { \"title\": \"Wilderness Survival Camp\", \"description\": \"Learn to survive in the great outdoors without modern amenities\", \"difficulty\": 8 }, { \"title\": \"Underwater Scuba Adventure\", \"description\": \"Explore the depths of the ocean and encounter marine life\", \"difficulty\": 5 }, { \"title\": \"Parkour Urban Challenge\", \"description\": \"Navigate through urban obstacles with agility and speed\", \"difficulty\": 7 }, { \"title\": \"White Water Rafting Expedition\", \"description\": \"Conquer rapids and rough waters in a thrilling rafting trip\", \"difficulty\": 9 }, { \"title\": \"Extreme Skydiving Experience\", \"description\": \"Leap from a plane and freefall through the clouds\", \"difficulty\": 8 }, { \"title\": \"Rock Climbing Competition\", \"description\": \"Compete against other climbers in a challenging ascent\", \"difficulty\": 7 }, { \"title\": \"Kayaking Adventure Race\", \"description\": \"Race against the clock and other competitors in a fast-paced kayak race\", \"difficulty\": 6 } ] }",
+                        ]
+                    ],
+                ],
+            ]),
+        ]);
+        
+        /**
+         * @var ChallengeController $controller
+         */
+        $controller = app(ChallengeController::class);
+
+        $response = $controller->gpt();
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $this->assertTrue($response->getData(true)['success']);
+        
+        Bus::assertDispatched(ChallengesFill::class);
     }
 }

@@ -19,7 +19,7 @@ class GPTUserSeeder extends Seeder
         $query = OpenAI::chat()->create([
             'model' => 'gpt-3.5-turbo',
             'messages' => [
-                ['role' => 'user', 'content' => 'Generate a json file that has 10 fake users. Create some fake attributes about the users like their name, email and image_path (url)'],
+                ['role' => 'user', 'content' => 'Generate a json file with key users that has 10 fake users. Create some fake attributes about the users like their name, email and image_path (url)'],
             ],
         ]);
         

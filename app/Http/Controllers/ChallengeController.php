@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Programs\ProgramsRequest;
+use App\Jobs\GPTSeeder\ChallengesFill;
 use App\Repositories\ChallengeRepository;
 use App\Models\Challenge;
 use App\Http\Requests\Challenges\StoreChallengeRequest;
@@ -38,11 +40,13 @@ class ChallengeController extends Controller
      * Create model
      *
      * @param StoreChallengeRequest $request
+     * @param ProgramsRequest $program
+     * @param string $userId
      * @return Challenge
      */
-    public function store(StoreChallengeRequest $request): Challenge
+    public function store(StoreChallengeRequest $request, ProgramsRequest $program, string $userId): Challenge
     {
-        return $this->challengeRepository->create($request->get('user_id'), $request->except(['user_id', 'programs']), $request->get('programs'));
+        return $this->challengeRepository->create($userId, $request->all(), $program->get('programs'));
     }
 
     /**
@@ -60,11 +64,13 @@ class ChallengeController extends Controller
      * Update model
      *
      * @param StoreChallengeRequest $request
+     * @param ProgramsRequest $program
+     * @param string $id
      * @return Challenge
      */
-    public function update(UpdateChallengeRequest $request, string $id): Challenge
+    public function update(UpdateChallengeRequest $request, ProgramsRequest $program, string $id): Challenge
     {
-        return $this->challengeRepository->update($id, $request->except(['user_id', 'programs']), $request->get('user_id'), $request->get('programs'));
+        return $this->challengeRepository->update($id, $request->except('user_id'), $request->get('user_id'), $program->get('programs'));
     }
 
     /**
@@ -77,6 +83,21 @@ class ChallengeController extends Controller
     {
         return response()->json([
             'success' => (bool) $this->challengeRepository->delete($id),
+        ]);
+    }
+
+    /**
+     * Fill using gpt
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function gpt()
+    {
+        ChallengesFill::dispatch();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fill with GPT process will be run quickly'
         ]);
     }
 }

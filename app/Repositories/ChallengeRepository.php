@@ -55,13 +55,12 @@ class ChallengeRepository {
                  * @var Challenge $challenge
                  */
                 $challenge = new Challenge($attributes);
-                $user = $user instanceof User ? $user : $this->user->findOrFail($user);
                 $challenge->user()->associate($user);
                 $challenge->save();
                 if($programs && count($programs) > 0){
                     $challenge->participants()->syncWithoutDetaching($programs);
                 }
-                return $challenge->refresh();
+                return $challenge->refresh()->load(['user', 'participants']);
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));
@@ -78,7 +77,7 @@ class ChallengeRepository {
      */
     public function read(string $id): Challenge
     {
-        return $this->challenge->newQuery()->with(['user'])->findOrFail($id);
+        return $this->challenge->newQuery()->with(['user', 'participants'])->findOrFail($id);
     }
 
     /**
@@ -103,11 +102,11 @@ class ChallengeRepository {
                 if($user){
                     $challenge->user()->associate($user);
                 }
-                if($programs && count($programs) > 0){
-                    $challenge->participants()->syncWithoutDetaching($programs);
-                }
                 $challenge->update($attributes);
-                return $challenge->refresh();
+                if($programs && count($programs) > 0){
+                    $challenge->participants()->sync($programs);
+                }
+                return $challenge->refresh()->load(['user', 'participants']);
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));

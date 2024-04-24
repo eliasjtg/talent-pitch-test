@@ -49,8 +49,7 @@ class UserRepository {
                 if($programs && count($programs) > 0){
                     $user->participants()->syncWithoutDetaching($programs);
                 }
-                $user->save();
-                return $user->refresh();
+                return $user->load('participants');
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));
@@ -83,9 +82,9 @@ class UserRepository {
                 /**
                  * @var User $user
                  */
-                $user = $this->user->findOrFail($id);
+                $user = $this->user->newQuery()->with('participants')->findOrFail($id);
                 if($programs && count($programs) > 0){
-                    $user->participants()->syncWithoutDetaching($programs);
+                    $user->participants()->sync($programs);
                 }
                 $user->update($attributes);
                 return $user->refresh();

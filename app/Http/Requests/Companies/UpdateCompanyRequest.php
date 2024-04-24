@@ -35,13 +35,6 @@ class UpdateCompanyRequest extends FormRequest
                 'integer',
                 'exists:users,id'
             ],
-            'programs' => [
-                'array',
-            ],
-            'programs.*' => [
-                'integer',
-                'exists:programs,id'
-            ],
         ];
     }
 }

@@ -47,7 +47,7 @@ class CompanyRepository {
      * @param array|null $programs
      * @return Company
      */
-    public function create(int $user, array $attributes, array $programs = null): Company
+    public function create(User|int $user, array $attributes, array $programs = null): Company
     {
 
         try {
@@ -56,15 +56,13 @@ class CompanyRepository {
                 /**
                  * @var Company $company
                  */
-
                  $company = new Company($attributes);
-                 $user = $user instanceof User ? $user : $this->user->findOrFail($user);
                  $company->user()->associate($user);
                  $company->save();
                  if($programs && count($programs) > 0){
                      $company->participants()->syncWithoutDetaching($programs);
                  }
-                 return $company->refresh();
+                 return $company->refresh()->load(['user', 'participants']);
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));
@@ -80,7 +78,7 @@ class CompanyRepository {
      */
     public function read(string $id): Company
     {
-        return $this->company->newQuery()->with(['user'])->findOrFail($id);
+        return $this->company->newQuery()->with(['user', 'participants'])->findOrFail($id);
     }
 
     /**
@@ -97,7 +95,6 @@ class CompanyRepository {
 
         try {
             return DB::transaction(function() use ($id, $attributes, $user, $programs) {
-                
                 /**
                  * @var Company $company
                  */
@@ -105,11 +102,11 @@ class CompanyRepository {
                 if($user){
                     $company->user()->associate($user);
                 }
-                if($programs && count($programs) > 0){
-                    $company->participants()->syncWithoutDetaching($programs);
-                }
                 $company->update($attributes);
-                return $company->refresh();
+                if($programs && count($programs) > 0){
+                    $company->participants()->sync($programs);
+                }
+                return $company->refresh()->load(['user', 'participants']);
             });
         } catch (Exception $e) {
             \Log::error($e->getMessage(), array('e' => $e));
