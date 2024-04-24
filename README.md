@@ -66,4 +66,26 @@ or
 
 # Seed individually
 $ php artisan db:seed --class=GPTUserSeeder
+$ php artisan db:seed --class=GPTChallengeSeeder
+$ php artisan db:seed --class=GPTCompanySeeder
+$ php artisan db:seed --class=GPTProgramSeeder
 ``` 
+
+## Resources
+
+##### Routes:
+
+Example: Challenge
+
+- Fill challenges with GPT: `POST /api/challenges/gpt`
+- List challenges: `GET /api/challenges`
+- Create challenge: `POST /api/challenges/{user_id}`
+- Read challenge: `GET /api/challenges/{id}`
+- Update challenge: `PATCH /api/challenges/{id}`
+- Delete challenge: `DELETE /api/challenges/{id}`
+
+![Routes](./storage/app/doc/routes.png "Routes")
+
+##### Fill with GPT:
+
+After fill with GPT, every entity list will show 10 new records.
